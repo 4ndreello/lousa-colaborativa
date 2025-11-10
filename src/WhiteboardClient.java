@@ -1,11 +1,11 @@
-import Tools.EraserTool;
-import Tools.PencilTool;
-import Tools.Tool;
+import Tools.*;
 import Connection.ServerConnection;
 import Panels.DrawingPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import javax.swing.*;
+import java.awt.*;
 
 public class WhiteboardClient extends JFrame {
 
@@ -14,59 +14,63 @@ public class WhiteboardClient extends JFrame {
     private JPanel configPanelContainer;
 
     public WhiteboardClient() {
-        super("java interactive whiteboard v6 - responsive");
-        // started bigger to look good on modern screens
+        super("java interactive whiteboard v8 - fixed history");
         setSize(1280, 800);
+        // Alterado para EXIT_ON_CLOSE padrão, mas podemos melhorar isso depois para fechar conexão limpo
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
+        // 1. CONECTA (mas ainda não escuta)
         try {
             connection = new ServerConnection("localhost", 12345, msg -> {
-                if (drawingPanel != null) drawingPanel.processCommand(msg);
+                // Agora isso é seguro, pois só vai começar a ouvir depois que drawingPanel existir
+                drawingPanel.processCommand(msg);
             });
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this, "connection error: " + e.getMessage());
             System.exit(1);
         }
 
+        // 2. CRIA A INTERFACE
         drawingPanel = new DrawingPanel(connection);
-
-        // === layout setup ===
-        // removed the background panel. drawingPanel now sits directly in the center,
-        // which makes standard borderlayout stretch it to fill available space.
         add(drawingPanel, BorderLayout.CENTER);
 
         JPanel topContainer = new JPanel(new BorderLayout());
-
-        // 1. main tools toolbar
         JToolBar mainToolbar = new JToolBar();
         mainToolbar.setFloatable(false);
         mainToolbar.setBackground(new Color(230, 230, 230));
 
-        JButton btnPencil = new JButton("✏️ pencil");
-        btnPencil.addActionListener(e -> selectTool(new PencilTool()));
-        mainToolbar.add(btnPencil);
-
-        JButton btnEraser = new JButton("🧽 eraser");
-        btnEraser.addActionListener(e -> selectTool(new EraserTool()));
-        mainToolbar.add(btnEraser);
+        mainToolbar.add(createToolButton("✏️", "pencil", new PencilTool()));
+        mainToolbar.add(createToolButton("🧽", "eraser", new EraserTool()));
+        mainToolbar.addSeparator();
+        mainToolbar.add(createToolButton("⬜", "rectangle", new RectangleTool()));
+        mainToolbar.add(createToolButton("🔳", "square", new SquareTool()));
+        mainToolbar.add(createToolButton("🔺", "triangle", new TriangleTool()));
+        mainToolbar.add(createToolButton("⬡", "hexagon", new HexagonTool()));
 
         mainToolbar.addSeparator();
-        JButton btnClear = new JButton("🗑️ clear all");
+        JButton btnClear = new JButton("🗑️ clear");
         btnClear.addActionListener(e -> connection.sendMessage("ACTION;CLEAR"));
         mainToolbar.add(btnClear);
 
-        // 2. dynamic config toolbar
         configPanelContainer = new JPanel(new BorderLayout());
         configPanelContainer.setBackground(new Color(245, 245, 245));
 
         topContainer.add(mainToolbar, BorderLayout.NORTH);
         topContainer.add(configPanelContainer, BorderLayout.SOUTH);
-
         add(topContainer, BorderLayout.NORTH);
 
-        // initialize default tool
         selectTool(new PencilTool());
+
+        // 3. TUDO PRONTO? AGORA SIM, COMEÇA A OUVIR O HISTÓRICO!
+        connection.startListening();
+    }
+
+    private JButton createToolButton(String icon, String tooltip, Tool tool) {
+        JButton btn = new JButton(icon);
+        btn.setToolTipText(tooltip);
+        btn.addActionListener(e -> selectTool(tool));
+        return btn;
     }
 
     private void selectTool(Tool tool) {

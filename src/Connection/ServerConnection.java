@@ -8,7 +8,6 @@ import java.net.Socket;
 import java.util.function.Consumer;
 
 public class ServerConnection {
-
     private final Socket socket;
     private final PrintWriter output;
     private final BufferedReader input;
@@ -19,7 +18,9 @@ public class ServerConnection {
         this.output = new PrintWriter(socket.getOutputStream(), true);
         this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.onMessageReceived = onMessageReceived;
+    }
 
+    public void startListening() {
         new Thread(this::listen).start();
     }
 
@@ -32,7 +33,7 @@ public class ServerConnection {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Conexão perdida: " + e.getMessage());
+            System.out.println("connection lost: " + e.getMessage());
         }
     }
 

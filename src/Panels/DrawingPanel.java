@@ -23,11 +23,7 @@ public class DrawingPanel extends JPanel {
 
     public DrawingPanel(ServerConnection connection) {
         this.connection = connection;
-
         setBackground(Color.WHITE);
-        // removed setPreferredSize to allow flexible resizing
-        // removed setBorder to look better fullscreen
-
         setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 
         addMouseListener(new MouseAdapter() {
@@ -35,17 +31,13 @@ public class DrawingPanel extends JPanel {
             public void mousePressed(MouseEvent e) {
                 currentTool.onMousePressed(e, connection);
             }
-
             @Override
             public void mouseReleased(MouseEvent e) {
                 currentTool.onMouseReleased(e, connection);
             }
-
             @Override
             public void mouseExited(MouseEvent e) {
-                mouseX = -100;
-                mouseY = -100;
-                repaint();
+                mouseX = -100; mouseY = -100; repaint();
             }
         });
 
@@ -53,15 +45,13 @@ public class DrawingPanel extends JPanel {
             @Override
             public void mouseDragged(MouseEvent e) {
                 currentTool.onMouseDragged(e, connection);
-                mouseX = e.getX();
-                mouseY = e.getY();
-                if (currentTool instanceof EraserTool) repaint();
+                mouseX = e.getX(); mouseY = e.getY();
+                // repaint needed for previews (shapes) and custom cursors (eraser)
+                repaint();
             }
-
             @Override
             public void mouseMoved(MouseEvent e) {
-                mouseX = e.getX();
-                mouseY = e.getY();
+                mouseX = e.getX(); mouseY = e.getY();
                 if (currentTool instanceof EraserTool) repaint();
             }
         });
@@ -81,38 +71,80 @@ public class DrawingPanel extends JPanel {
     public void processCommand(String command) {
         try {
             if (command.startsWith("ACTION;CLEAR")) {
-                if (g2d != null) {
-                    clearCanvas();
-                    repaint();
-                }
+                if (g2d != null) { clearCanvas(); repaint(); }
                 return;
             }
 
             String[] parts = command.split(";");
-            if (parts.length >= 8 && parts[0].equals("DRAW") && parts[1].equals("PENCIL")) {
-                Color color = Color.decode(parts[2]);
-                int thickness = Integer.parseInt(parts[3]);
-                int x1 = Integer.parseInt(parts[4]);
-                int y1 = Integer.parseInt(parts[5]);
-                int x2 = Integer.parseInt(parts[6]);
-                int y2 = Integer.parseInt(parts[7]);
+            if (parts.length < 2 || !parts[0].equals("DRAW")) return;
 
-                // ensure g2d exists before trying to draw from network
-                if (g2d == null) {
-                    // force canvas creation if it doesn't exist yet
-                    ensureCanvasExists(Math.max(x1, x2) + 100, Math.max(y1, y2) + 100);
-                }
-
-                if (g2d != null) {
-                    g2d.setColor(color);
-                    g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                    g2d.drawLine(x1, y1, x2, y2);
-                    repaint();
-                }
+            String type = parts[1];
+            // common parameters for most shapes
+            Color color = Color.BLACK;
+            int thickness = 1;
+            if (parts.length > 3) {
+                color = Color.decode(parts[2]);
+                thickness = Integer.parseInt(parts[3]);
             }
+
+            ensureGraphics();
+            g2d.setColor(color);
+            g2d.setStroke(new BasicStroke(thickness, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+            switch (type) {
+                case "PENCIL":
+                    if (parts.length >= 8) {
+                        g2d.drawLine(Integer.parseInt(parts[4]), Integer.parseInt(parts[5]),
+                                Integer.parseInt(parts[6]), Integer.parseInt(parts[7]));
+                    }
+                    break;
+                case "RECT":
+                    if (parts.length >= 8) {
+                        g2d.drawRect(Integer.parseInt(parts[4]), Integer.parseInt(parts[5]),
+                                Integer.parseInt(parts[6]), Integer.parseInt(parts[7]));
+                    }
+                    break;
+                case "TRIANGLE":
+                    if (parts.length >= 8) {
+                        drawPolygonShape(parts, 3);
+                    }
+                    break;
+                case "HEXAGON":
+                    if (parts.length >= 8) {
+                        drawPolygonShape(parts, 6);
+                    }
+                    break;
+            }
+            repaint();
+
         } catch (Exception e) {
             System.out.println("error processing command: " + command);
         }
+    }
+
+    // helper to draw polygons from bounding box received from server
+    private void drawPolygonShape(String[] parts, int sides) {
+        int x = Integer.parseInt(parts[4]);
+        int y = Integer.parseInt(parts[5]);
+        int w = Integer.parseInt(parts[6]);
+        int h = Integer.parseInt(parts[7]);
+
+        int[] xPoints = new int[sides];
+        int[] yPoints = new int[sides];
+
+        if (sides == 3) { // Triangle
+            xPoints[0] = x + w / 2; yPoints[0] = y;
+            xPoints[1] = x;         yPoints[1] = y + h;
+            xPoints[2] = x + w;     yPoints[2] = y + h;
+        } else if (sides == 6) { // Hexagon
+            xPoints[0] = x + (int)(w * 0.25); yPoints[0] = y;
+            xPoints[1] = x + (int)(w * 0.75); yPoints[1] = y;
+            xPoints[2] = x + w;               yPoints[2] = y + h / 2;
+            xPoints[3] = x + (int)(w * 0.75); yPoints[3] = y + h;
+            xPoints[4] = x + (int)(w * 0.25); yPoints[4] = y + h;
+            xPoints[5] = x;                   yPoints[5] = y + h / 2;
+        }
+        g2d.drawPolygon(xPoints, yPoints, sides);
     }
 
     private void clearCanvas() {
@@ -123,49 +155,53 @@ public class DrawingPanel extends JPanel {
         g2d.setColor(originalColor);
     }
 
-    // checks if canvas needs to grow to fit new window size
+    private void ensureGraphics() {
+        // ensures canvas exists before drawing from network commands
+        ensureCanvasExists(getWidth(), getHeight());
+        if (g2d == null && canvas != null) {
+            g2d = canvas.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        }
+    }
+
     private void ensureCanvasExists(int width, int height) {
-        if (width <= 0 || height <= 0) return;
+        if (width <= 0 || height <= 0) width = 1; height = 1; // safety
 
         if (canvas == null || width > canvas.getWidth() || height > canvas.getHeight()) {
-            int newWidth = Math.max(width, canvas == null ? 1 : canvas.getWidth());
-            int newHeight = Math.max(height, canvas == null ? 1 : canvas.getHeight());
+            int newWidth = Math.max(width, canvas == null ? 800 : canvas.getWidth());
+            int newHeight = Math.max(height, canvas == null ? 600 : canvas.getHeight());
 
             BufferedImage newCanvas = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
             Graphics2D newG = newCanvas.createGraphics();
             newG.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-            // fill new area with white
             newG.setColor(Color.WHITE);
             newG.fillRect(0, 0, newWidth, newHeight);
 
-            // copy old data if exists
-            if (canvas != null) {
-                newG.drawImage(canvas, 0, 0, null);
-            }
-
-            // update references
-            this.canvas = newCanvas;
-            this.g2d = this.canvas.createGraphics();
-            this.g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            if (canvas != null) newG.drawImage(canvas, 0, 0, null);
+            canvas = newCanvas;
+            g2d = canvas.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         }
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // dynamically grow canvas if window got bigger
         ensureCanvasExists(getWidth(), getHeight());
-
         g.drawImage(canvas, 0, 0, null);
 
+        // render tool preview (transient, not saved to canvas yet)
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        currentTool.drawPreview(g2);
+
+        // render custom cursor if needed
         if (currentTool instanceof EraserTool && mouseX != -100) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(Color.BLACK);
-            int thickness = currentTool.getThickness();
-            g2.drawOval(mouseX - thickness / 2, mouseY - thickness / 2, thickness, thickness);
-            g2.dispose();
+            int t = currentTool.getThickness();
+            g2.drawOval(mouseX - t / 2, mouseY - t / 2, t, t);
         }
+        g2.dispose();
     }
 }

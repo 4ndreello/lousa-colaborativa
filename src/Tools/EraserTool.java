@@ -39,7 +39,7 @@ public class EraserTool extends PencilTool {
 
         options.add(new JLabel("size: "));
         JSlider slider = new JSlider(JSlider.HORIZONTAL, 10, 100, thickness);
-        slider.setPreferredSize(new Dimension(150, 20));
+        slider.setPreferredSize(new Dimension(150, 35));
         slider.addChangeListener(e -> {
             this.thickness = slider.getValue();
             context.repaint();
