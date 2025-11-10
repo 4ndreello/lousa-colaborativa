@@ -2,7 +2,7 @@ import Tools.EraserTool;
 import Tools.PencilTool;
 import Tools.Tool;
 import Connection.ServerConnection;
-import panels.DrawingPanel;
+import Panels.DrawingPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;

@@ -1,6 +1,6 @@
 package Tools;
 import Connection.ServerConnection;
-import panels.DrawingPanel;
+import Panels.DrawingPanel;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;

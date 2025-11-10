@@ -1,4 +1,4 @@
-package panels;
+package Panels;
 
 import Tools.EraserTool;
 import Tools.PencilTool;
