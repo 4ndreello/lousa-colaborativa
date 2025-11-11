@@ -7,7 +7,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
-// abstract base class for shapes defined by dragging a bounding box
 public abstract class ShapeTool implements Tool {
 
     protected int startX, startY;

@@ -16,14 +16,11 @@ public class WhiteboardClient extends JFrame {
     public WhiteboardClient() {
         super("java interactive whiteboard v8 - fixed history");
         setSize(1280, 800);
-        // Alterado para EXIT_ON_CLOSE padrão, mas podemos melhorar isso depois para fechar conexão limpo
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // 1. CONECTA (mas ainda não escuta)
         try {
             connection = new ServerConnection("localhost", 12345, msg -> {
-                // Agora isso é seguro, pois só vai começar a ouvir depois que drawingPanel existir
                 drawingPanel.processCommand(msg);
             });
         } catch (IOException e) {
@@ -31,7 +28,6 @@ public class WhiteboardClient extends JFrame {
             System.exit(1);
         }
 
-        // 2. CRIA A INTERFACE
         drawingPanel = new DrawingPanel(connection);
         add(drawingPanel, BorderLayout.CENTER);
 
@@ -62,7 +58,6 @@ public class WhiteboardClient extends JFrame {
 
         selectTool(new PencilTool());
 
-        // 3. TUDO PRONTO? AGORA SIM, COMEÇA A OUVIR O HISTÓRICO!
         connection.startListening();
     }
 

@@ -11,7 +11,7 @@ public interface Tool {
     void onMouseDragged(MouseEvent e, ServerConnection connection);
     void onMouseReleased(MouseEvent e, ServerConnection connection);
 
-    // new: allows the tool to draw a temporary preview on the panel (e.g. while dragging a shape)
+    // allows the tool to draw a temporary preview on the panel (e.g. while dragging a shape)
     void drawPreview(Graphics2D g);
 
     JComponent getOptionsPanel(DrawingPanel context);

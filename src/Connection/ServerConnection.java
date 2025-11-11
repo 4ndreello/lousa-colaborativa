@@ -18,6 +18,8 @@ public class ServerConnection {
         this.output = new PrintWriter(socket.getOutputStream(), true);
         this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.onMessageReceived = onMessageReceived;
+        // REMOVIDO: new Thread(this::listen).start();
+        // Agora esperamos ser chamados explicitamente
     }
 
     public void startListening() {
