@@ -13,7 +13,7 @@ public class WhiteboardClient extends JFrame {
     private JPanel configPanelContainer;
 
     public WhiteboardClient(String host, String portStr, int timeoutMillis) {
-        super("java interactive whiteboard v8 - fixed history");
+        super("DrawTogether");
         setSize(1280, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -40,6 +40,13 @@ public class WhiteboardClient extends JFrame {
         JToolBar mainToolbar = new JToolBar();
         mainToolbar.setFloatable(false);
         mainToolbar.setBackground(new Color(230, 230, 230));
+
+        JLabel titleLabel = new JLabel("DrawTogether");
+        titleLabel.setFont(new Font("sans-serif", Font.BOLD, 16));
+        // add some padding (top, left, bottom, right)
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 15));
+        mainToolbar.add(titleLabel);
+        mainToolbar.add(new JToolBar.Separator());
 
         mainToolbar.add(createToolButton("✏️", "pencil", new PencilTool()));
         mainToolbar.add(createToolButton("🧽", "eraser", new EraserTool()));
@@ -86,16 +93,15 @@ public class WhiteboardClient extends JFrame {
 
         final int CONNECTION_TIMEOUT_MS = 3000;
 
-        JTextField hostField = new JTextField("34.39.233.209");
+        JTextField hostField = new JTextField("34.39.200.209"); // production server
         JTextField portField = new JTextField("8080");
 
-        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5)); // 2 colunas, espaçamento 5
-        panel.add(new JLabel("host:")); // lowercase english
+        JPanel panel = new JPanel(new GridLayout(0, 2, 5, 5));
+        panel.add(new JLabel("host:"));
         panel.add(hostField);
-        panel.add(new JLabel("port:")); // lowercase english
+        panel.add(new JLabel("port:"));
         panel.add(portField);
 
-        // 3. Exibe o JOptionPane com o painel customizado (lowercase english)
         int result = JOptionPane.showConfirmDialog(null, panel, "connect to server",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
