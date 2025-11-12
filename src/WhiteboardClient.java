@@ -20,7 +20,7 @@ public class WhiteboardClient extends JFrame {
         setLocationRelativeTo(null);
 
         try {
-            connection = new ServerConnection("localhost", 12345, msg -> {
+            connection = new ServerConnection("34.39.233.209", 8080, msg -> {
                 drawingPanel.processCommand(msg);
             });
         } catch (IOException e) {
