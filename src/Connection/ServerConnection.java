@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.function.Consumer;
+import java.net.InetSocketAddress;
 
 public class ServerConnection {
     private final Socket socket;
@@ -13,13 +14,24 @@ public class ServerConnection {
     private final BufferedReader input;
     private final Consumer<String> onMessageReceived;
 
-    public ServerConnection(String host, int port, Consumer<String> onMessageReceived) throws IOException {
-        this.socket = new Socket(host, port);
+    /**
+     * modified constructor to support a connection timeout.
+     * @param host server address
+     * @param port server port
+     * @param timeoutMillis connection timeout in milliseconds
+     * @param onMessageReceived callback for messages
+     * @throws IOException if connection fails or times out
+     */
+    public ServerConnection(String host, int port, int timeoutMillis, Consumer<String> onMessageReceived) throws IOException {
+        this.socket = new Socket();
+
+        InetSocketAddress address = new InetSocketAddress(host, port);
+
+        this.socket.connect(address, timeoutMillis);
+
         this.output = new PrintWriter(socket.getOutputStream(), true);
         this.input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.onMessageReceived = onMessageReceived;
-        // REMOVIDO: new Thread(this::listen).start();
-        // Agora esperamos ser chamados explicitamente
     }
 
     public void startListening() {
